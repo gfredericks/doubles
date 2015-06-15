@@ -12,20 +12,6 @@
                           (if (< x prob) 0 1))]]
     (#'doubles/bits->double (vec bits))))
 
-#_
-(defspec double->data-round-trip 1000
-  (prop/for-all [x (gen/one-of [gen'/double gen-binary-double])]
-    (= x (-> x (doubles/double->data) (doubles/data->double)))))
-
-(defn ratio->double
-  "Tries to convert a *BINARY* ratio to a double."
-  [q]
-  (loop [x' (double (numerator q))
-         denom (denominator q)]
-    (if (= 1 denom)
-      x'
-      (recur (/ x' 2) (/ denom 2)))))
-
 (defspec double-stuff 1000
   (prop/for-all [^Double x (gen/one-of [gen'/double gen-binary-double])]
     (let [data (doubles/double->data x)]
@@ -46,6 +32,8 @@
 
         (::doubles/subnormal ::doubles/normal)
         (let [value (:value data)]
-          (if (integer? value)
-            (= x (double value))
-            (= x (ratio->double value))))))))
+          (= x (doubles/exact->double value)))))))
+
+(defspec exactness-roundtrip 1000
+  (prop/for-all [x (gen/such-that #(not (.isInfinite ^Double %)) gen'/double)]
+    (= x (-> x doubles/double->exact doubles/exact->double))))

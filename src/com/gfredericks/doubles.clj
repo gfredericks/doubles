@@ -87,3 +87,29 @@
                                  (apply * (repeat (- exp) 1/2))))
                        (= 1 sign)
                        (-'))))))
+
+(defn double->exact
+  "Returns an exact number (integer or ratio) representing the value
+  of the given double, or nil if the double is infinite or NaN.
+
+  Positive and negative zero both return 0."
+  [x]
+  (-> x double->data :value))
+
+(defn exact->double
+  "Returns a double if the given integer or ratio is exactly
+  representable as a double, else nil."
+  [q]
+  (if (integer? q)
+    (let [x (double q)]
+      (when-not (.isInfinite x) x))
+    (let [x (double (numerator q))]
+      (when-not (.isInfinite x)
+        (loop [x x
+               denom (denominator q)]
+          (when-not (zero? x)
+            (if (= 1 denom)
+              x
+              (let [denom' (/ denom 2)]
+                (when (integer? denom')
+                  (recur (/ x 2) denom'))))))))))
