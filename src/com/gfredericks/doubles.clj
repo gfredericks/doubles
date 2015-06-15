@@ -96,6 +96,15 @@
   [x]
   (-> x double->data :value))
 
+(defn ^:private twos
+  "Returns k if n=2^k, else returns nil."
+  [n]
+  ;; this could probably be optimized, both for Long and BigInteger
+  (loop [ret 0
+         n n]
+    (cond (= 1 n) ret
+          (even? n) (recur (inc ret) (/ n 2)))))
+
 (defn exact->double
   "Returns a double if the given integer or ratio is exactly
   representable as a double, else nil."
@@ -107,13 +116,16 @@
   (if (integer? q)
     (let [x (double q)]
       (when-not (.isInfinite x) x))
-    (let [x (double (numerator q))]
-      (when-not (.isInfinite x)
-        (loop [x x
-               denom (denominator q)]
-          (when-not (zero? x)
-            (if (= 1 denom)
-              x
-              (let [denom' (/ denom 2)]
-                (when (integer? denom')
-                  (recur (/ x 2) denom'))))))))))
+    (when-let [pow (twos (denominator q))]
+
+      ;; then what‽
+      (let [x (double (numerator q))]
+        (when-not (.isInfinite x)
+          (loop [x x
+                 denom (denominator q)]
+            (when-not (zero? x)
+              (if (= 1 denom)
+                x
+                (let [denom' (/ denom 2)]
+                  (when (integer? denom')
+                    (recur (/ x 2) denom')))))))))))
