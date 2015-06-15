@@ -100,6 +100,10 @@
   "Returns a double if the given integer or ratio is exactly
   representable as a double, else nil."
   [q]
+  ;; I guess we should probably do something that doesn't involve
+  ;; dividing doubles, since who knows how weird that is.
+  ;;
+  ;; Maybe start off by factoring the denominator.
   (if (integer? q)
     (let [x (double q)]
       (when-not (.isInfinite x) x))

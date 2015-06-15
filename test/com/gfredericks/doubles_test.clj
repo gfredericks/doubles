@@ -34,6 +34,21 @@
         (let [value (:value data)]
           (= x (doubles/exact->double value)))))))
 
+(def gen-numeric-double
+  "A double that is not infinite or NaN."
+  (gen/such-that #(not (.isInfinite ^Double %)) gen'/double))
+
 (defspec exactness-roundtrip 1000
-  (prop/for-all [x (gen/such-that #(not (.isInfinite ^Double %)) gen'/double)]
+  (prop/for-all [x gen-numeric-double]
     (= x (-> x doubles/double->exact doubles/exact->double))))
+
+(defspec in-betweenies-spec 1000
+  (prop/for-all [x gen-numeric-double]
+    (let [x' (Math/nextUp ^double x)]
+      (or (.isInfinite (Double/valueOf x'))
+          (let [q (doubles/double->exact x)
+                q2 (doubles/double->exact x')
+                q3 (/ (+ q q2) 2)]
+            (and (doubles/exact->double q)
+                 (doubles/exact->double q2)
+                 (nil? (doubles/exact->double q3))))))))
