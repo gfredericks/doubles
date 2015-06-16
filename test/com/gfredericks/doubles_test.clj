@@ -8,9 +8,11 @@
 (def gen-binary-double
   (gen'/for [:parallel [prob (gen/choose 0 255)
                         bit-sources (gen/vector (gen/choose 0 255) 64)]
-             :let [bits (for [x bit-sources]
-                          (if (< x prob) 0 1))]]
-    (#'doubles/bits->double (vec bits))))
+             :let [long (reduce bit-or
+                                (map-indexed (fn [i bit]
+                                               (bit-shift-left bit i))
+                                             bit-sources))]]
+    (Double/longBitsToDouble long)))
 
 (defspec double-stuff 1000
   (prop/for-all [^Double x (gen/one-of [gen'/double gen-binary-double])]
