@@ -96,24 +96,52 @@
   [x]
   (-> x double->data :value))
 
+(def ^:const max-pos-double (double->exact Double/MAX_VALUE))
+(def ^:const min-pos-double (double->exact Double/MIN_VALUE))
+(def ^:const min-neg-double (- max-pos-double))
+(def ^:const max-neg-double (- min-pos-double))
+(def ^:const ^:private exp-2-52 (apply * (repeat 52 2)))
+
+(let [x ((fn [^Double x] (Math/scalb x -1022)) 1.0)]
+  (def ^:const min-normal-pos-double
+    (double->exact x))
+  (def ^:const max-subnormal-pos-double
+    (double->exact (Math/nextAfter ^double x -1.0))))
+
+(def ^:const ^:private subnormal-factor (/ min-pos-double))
+
+(defn ^:private scale
+  "Returns [q' k] such that q = q' * 2^k, with 1.0 <= q' < 2."
+  [q]
+  {:pre [(pos? q)]}
+  (if (< q 1)
+    (loop [q' q
+           k 0]
+      (if (<= 1 q')
+        [q' k]
+        (recur (* q' 2) (dec k))))
+    (loop [q' q
+           k 0]
+      (if (<= 2 q')
+        (recur (/ q' 2) (inc k))
+        [q' k]))))
+
 (defn exact->double
   "Returns a double if the given integer or ratio is exactly
   representable as a double, else nil."
   [q]
-  ;; I guess we should probably do something that doesn't involve
-  ;; dividing doubles, since who knows how weird that is.
-  ;;
-  ;; Maybe start off by factoring the denominator.
-  (if (integer? q)
-    (let [x (double q)]
-      (when-not (.isInfinite x) x))
-    (let [x (double (numerator q))]
-      (when-not (.isInfinite x)
-        (loop [x x
-               denom (denominator q)]
-          (when-not (zero? x)
-            (if (= 1 denom)
-              x
-              (let [denom' (/ denom 2)]
-                (when (integer? denom')
-                  (recur (/ x 2) denom'))))))))))
+  (cond (zero? q)    0.0
+        (neg? q)     (some-> q - exact->double -)
+        :else
+        (if (<= q max-subnormal-pos-double)
+          (let [m (* q subnormal-factor)]
+            (when (integer? m)
+              ;; this just happens to work, since all the other
+              ;; fields can be zero.
+              (Double/longBitsToDouble (long m))))
+          (let [[q' k] (scale q)]
+            (when (<= -1022 k 1023)
+              (let [m (* (- q' 1) exp-2-52)]
+                (when (integer? m)
+                  (Double/longBitsToDouble
+                   (bit-or (long m) (bit-shift-left (+ 1023 k) 52))))))))))
