@@ -5,19 +5,33 @@
 
 (def ^:private exp2-1022 (apply * (repeat 1022 2N)))
 
+(defn parse-double
+  "Returns [sign exponent fraction] where each is a non-negative
+  integer read from the corresponding field of the binary
+  representation of the given double."
+  [^double x]
+  (let [x-long (Double/doubleToRawLongBits x)]
+    [(-> x-long (bit-shift-right 63) (bit-and 1))
+     (-> x-long (bit-shift-right 52) (bit-and 0x7ff))
+     (-> x-long (bit-and 0xfffffffffffff))]))
+
+(defn unparse-double
+  [[sign exponent fraction]]
+  (Double/longBitsToDouble
+   (bit-or (bit-shift-left sign 63)
+           (bit-shift-left exponent 52)
+           fraction)))
+
 (defn double->data
   [x]
-  (let [x-long (Double/doubleToRawLongBits ^double x)
-        sign (-> x-long (bit-shift-right 63) (bit-and 1))
-        base' (bit-and x-long 0xfffffffffffff)
+  (let [[sign exp' base'] (parse-double x)
         base (-> base'
                  (/ 0x10000000000000)
                  (+ 1))
-        exp' (bit-and 0x7ff (bit-shift-right x-long 52))
         exp (- exp' 1023)
         base-ret {:fields {:sign sign
-                           :base base'
-                           :exp exp'}}]
+                           :fraction base'
+                           :exponent exp'}}]
     (case exp'
       0 (if (zero? base')
           (assoc base-ret
