@@ -4,7 +4,7 @@ I wrote some code to do things with doubles.
 
 ## Obtention
 
-`[com.gfredericks/doubles "0.1.0-SNAPSHOT"]`
+`[com.gfredericks/doubles "0.1.0"]`
 
 ## Usage
 

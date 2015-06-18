@@ -1,4 +1,4 @@
-(defproject com.gfredericks/doubles "0.1.0-SNAPSHOT"
+(defproject com.gfredericks/doubles "0.1.0"
   :description "Some stuff about doubles"
   :url "https://github.com/gfredericks/doubles"
   :license {:name "Eclipse Public License"
