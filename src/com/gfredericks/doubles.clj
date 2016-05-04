@@ -115,3 +115,26 @@
                 (when (integer? m)
                   (Double/longBitsToDouble
                    (bit-or (long m) (bit-shift-left (+ 1023 k) 52))))))))))
+
+(defmethod print-method Double
+  [x ^java.io.Writer pw]
+  (if (or (Double/isInfinite x)
+          (Double/isNaN x))
+    (.write pw (str x))
+    (let [s (-> x double->exact bigdec str)
+          s (subs s 0 (count s))
+          s (if (re-find #"\." s) s (str s ".0"))]
+      (.write pw s))))
+
+;; E.g.:
+
+;; user> 0.1
+;; 0.1000000000000000055511151231257827021181583404541015625
+;; user> 0.25
+;; 0.25
+;; user> 42.0
+;; 42.0
+;; user> 42.42
+;; 42.4200000000000017053025658242404460906982421875
+;; user> 1e50
+;; 100000000000000007629769841091887003294964970946560.0
