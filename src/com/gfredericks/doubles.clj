@@ -116,15 +116,17 @@
                   (Double/longBitsToDouble
                    (bit-or (long m) (bit-shift-left (+ 1023 k) 52))))))))))
 
-(defmethod print-method Double
-  [x ^java.io.Writer pw]
-  (if (or (Double/isInfinite x)
-          (Double/isNaN x))
-    (.write pw (str x))
-    (let [s (-> x double->exact bigdec str)
-          s (subs s 0 (count s))
-          s (if (re-find #"\." s) s (str s ".0"))]
-      (.write pw s))))
+(defn override-double-printing!
+  []
+  (defmethod print-method Double
+    [x ^java.io.Writer pw]
+    (if (or (Double/isInfinite x)
+            (Double/isNaN x))
+      (.write pw (str x))
+      (let [s (-> x double->exact bigdec str)
+            s (subs s 0 (count s))
+            s (if (re-find #"\." s) s (str s ".0"))]
+        (.write pw s)))))
 
 ;; E.g.:
 
