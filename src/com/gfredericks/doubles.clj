@@ -1,4 +1,5 @@
-(ns com.gfredericks.doubles)
+(ns com.gfredericks.doubles
+  (:refer-clojure :exclude [parse-double]))
 
 ;; Reference:
 ;; https://en.wikipedia.org/w/index.php?title=Double-precision_floating-point_format&oldid=662600606
@@ -115,6 +116,8 @@
                 (when (integer? m)
                   (Double/longBitsToDouble
                    (bit-or (long m) (bit-shift-left (+ 1023 k) 52))))))))))
+
+(def double->bigdec (comp bigdec double->exact))
 
 (defn override-double-printing!
   []
